@@ -20,6 +20,21 @@ async function createAdminUser() {
   return { ...user, password: 'toomanysecrets' };
 }
 
+async function createStoreT(franchise){
+  createRes = await DB.createStore(franchise.id, franchise);
+
+  //return { id: insertResult.insertId, franchiseId, name: store.name };
+  return createRes;
+}
+
+// async function createFranchiseStore(franchise){
+//   const franchise = await createFranchiseT(); //manually shove into db
+//   const adminRes = await signInAdmin(); //sign in admin
+
+//   //return { id: insertResult.insertId, franchiseId, name: store.name };
+//   return admin
+// }
+
 async function createFranchiseT(){
   //add franchise to the db
   const name = randomName();
@@ -37,11 +52,6 @@ async function signOutT(token){
   //sign out whoever needs to get signed out
   await DB.logoutUser(token);
 }
-
-// async function createFranchiseStore(franchise){
-//   const franchise = await createFranchiseT(); //manually shove into db
-//   const adminRes = await signInAdmin(); //sign in admin
-// }
 
 beforeAll(async () => {
     //register user
@@ -98,11 +108,35 @@ test("create franchise store", async ()=>{
   await signOutT(adminRes.body.token);
 })
 
+
+
 test("delete franchise store", async ()=>{
+  //create store
+  //
+  testAdmin = await createAdminUser();
+  const adminRes = await signInAdmin(); //sign in admin uuuhhh the admin has no roles??
+  const franchise = await createFranchiseT(); //manually shove into db
+  const createRes = await createStoreT(franchise); // { id: insertResult.insertId, franchiseId, name: store.name }
 
+  //we need an admin, a franchise, and a store
 
+  const delRes = await request(app)
+  .delete(`/api/franchise/${franchise.id}/store/${createRes.insertId}`)
+  .set("Authorization", `Bearer ${adminRes.body.token}`)
+  .send();
+
+  expect(delRes.status).toBe(200);
+  await signOutT(adminRes.body.token);
 
 })
+
+// method: 'DELETE',
+//     path: '/api/franchise/:franchiseId/store/:storeId',
+//     requiresAuth: true,
+//     description: `Delete a store`,
+//     example: `curl -X DELETE localhost:3000/api/franchise/1/store/1  -H 'Authorization: Bearer tttttt'`,
+//     response: { message: 'store deleted' },
+//   },
 
 
 

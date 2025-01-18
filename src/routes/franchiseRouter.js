@@ -113,7 +113,6 @@ franchiseRouter.post(
   asyncHandler(async (req, res) => {
     const franchiseId = Number(req.params.franchiseId);
     const franchise = await DB.getFranchise({ id: franchiseId });
-    console.log(`elephant ${JSON.stringify(req.user)}  ${JSON.stringify(req.params)}`)
 
     if (!franchise || (!req.user.isRole(Role.Admin) && !franchise.admins.some((admin) => admin.id === req.user.id))) {
       throw new StatusCodeError('unable to create a store', 403);
