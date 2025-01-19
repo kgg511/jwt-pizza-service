@@ -32,13 +32,34 @@ async function createFranchise(auth_token, person_to_be_franchisee){
   return addRes;
 }
 
+async function deleteFranchise(auth_token, franchisee){
+  const franchise = await prob.createFranchiseT(franchisee); //manually shove into db
+
+  //now we attempt to remove said franchise
+  const delRes = await request(app)
+  .delete(`/api/franchise/${franchise.id}`)
+  .set("Authorization", `Bearer ${auth_token}`)
+  .send();
+  return delRes;
+}
+
+async function createFranchiseStore(auth_token, franchise){
+  const storeRes = await request(app).post(`/api/franchise/${franchise.id}/store`)
+  .set("Content-Type", "application/json")
+  .set("Authorization", `Bearer ${auth_token}`)
+  .send({"franchiseId": franchise.id, "name":franchise.name});
+  return storeRes;
+}
+
+//    example: `curl -X POST localhost:3000/api/franchise -H 'Content-Type: application/json' -H 'Authorization: Bearer tttttt' -d '{"name": "pizzaPocket", "admins": [{"email": "f@jwt.com"}]}'`,
+//response: { name: 'pizzaPocket', admins: [{ email: 'f@jwt.com', id: 4, name: 'pizza franchisee' }], id: 1 },
+
 // TESTS START HERE
 test("create franchise", async ()=>{ // create a franchise (NOT A FRANCHISE STORE))
     testAdmin = await prob.createAdminUser();
     const adminRes = await prob.signInAdmin(testAdmin);
     const addRes = await createFranchise(adminRes.body.token, testUser);
     expect(addRes.status).toBe(200);
-
     await prob.signOutT(adminRes.body.token);
     //{ user: { id: 1, name: '常用名字', email: 'a@jwt.com', roles: [{ role: 'admin' }] }
 })
@@ -52,33 +73,39 @@ test("create franchise unauthorized", async()=>{
 
 test("delete franchise", async ()=>{
   const testAdmin = await prob.createAdminUser();
-  const franchise = await prob.createFranchiseT(testUser); //manually shove into db
   const adminRes = await prob.signInAdmin(testAdmin); //sign in admin
-
-  //now we attempt to remove said franchise
-  const delRes = await request(app)
-  .delete(`/api/franchise/${franchise.id}`)
-  .set("Authorization", `Bearer ${adminRes.body.token}`)
-  .send();
-
+  const delRes = await deleteFranchise(adminRes.body.token, testUser); //gives and deletes franchise
   expect(delRes.status).toBe(200);
   await prob.signOutT(adminRes.body.token); //doesn't return anything
+})
+
+test("delete franchise unauthorized", async()=>{
+  const loginRes = await prob.signInAdmin(testUser); //sign in admin
+  const delRes = await deleteFranchise(loginRes.body.token, testUser); //gives and deletes franchise
+  expect(delRes.status).toBe(403);
+  await prob.signOutT(loginRes.body.token); //doesn't return anything
 })
 
 //create franchise store
 test("create franchise store", async ()=>{
   testAdmin = await prob.createAdminUser();
   const adminRes = await prob.signInAdmin(testAdmin); //sign in admin uuuhhh the admin has no roles??
-  const franchise = await prob.createFranchiseT(testUser); //manually shove into db
-
-  const storeRes = await request(app).post(`/api/franchise/${franchise.id}/store`)
-  .set("Content-Type", "application/json")
-  .set("Authorization", `Bearer ${adminRes.body.token}`)
-  .send({"franchiseId": franchise.id, "name":franchise.name});
-
-  expect(storeRes.status).toBe(200);
+  const franchise = await prob.createFranchiseT(testUser); 
+  const storeRes = await createFranchiseStore(adminRes.body.token, franchise);
+  expect(storeRes.status).toBe(200); //createFranchiseStore(auth_token, franchise)
 
   await prob.signOutT(adminRes.body.token);
+})
+
+test("create franchise store unauthorized", async()=>{
+  const otherUser = await prob.createDinerUser();
+  const loginRes = await prob.signInAdmin(otherUser);
+  const franchise = await prob.createFranchiseT(testUser); 
+  //attempt to create franchise store without authentication from either an admin or the franchise
+  const storeRes = await createFranchiseStore(loginRes.body.token, franchise);
+  expect(storeRes.status).toBe(403);
+
+  await prob.signOutT(loginRes.body.token);
 })
 
 

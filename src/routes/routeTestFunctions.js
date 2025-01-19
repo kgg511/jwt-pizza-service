@@ -21,6 +21,14 @@ class Probar{
         expect(potentialJwt).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
     }
 
+    async createDinerUser() {
+        let user = { password: 'toomanysecrets', roles: [{ role: Role.Diner}] };
+        user.name = prob.randomName();
+        user.email = user.name + '@diner.com';
+        user = await DB.addUser(user);
+        return { ...user, password: 'toomanysecrets' };
+    }
+
     async createAdminUser() {
         let user = { password: 'toomanysecrets', roles: [{ role: Role.Admin }] };
         user.name = prob.randomName();
@@ -39,10 +47,10 @@ class Probar{
     }
 
     //franchise related functions
-    async createFranchiseT(testUser){
+    async createFranchiseT(admin){
       //add franchise to the db
       const name = this.randomName();
-      const testFranchise = {"name": name, "admins": [{"email": testUser.email}]};
+      const testFranchise = {"name": name, "admins": [{"email": admin.email}]};
       const franchise = await DB.createFranchise(testFranchise); //forces it in so we shouldn't need to be logged in as admin
       return franchise;
     }
