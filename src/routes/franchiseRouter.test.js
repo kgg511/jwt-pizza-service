@@ -8,6 +8,9 @@ const prob = new Probar();
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a'};
 let testAdmin;
 let testUserAuthToken;
+if (process.env.VSCODE_INSPECTOR_OPTIONS) {
+  jest.setTimeout(60 * 1000 * 5); // 5 minutes
+}
 
 beforeAll(async () => {
     //register user
