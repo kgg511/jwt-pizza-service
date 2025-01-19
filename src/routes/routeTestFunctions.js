@@ -38,6 +38,20 @@ class Probar{
         await DB.logoutUser(token);
     }
 
+    //franchise related functions
+    async createFranchiseT(testUser){
+      //add franchise to the db
+      const name = this.randomName();
+      const testFranchise = {"name": name, "admins": [{"email": testUser.email}]};
+      const franchise = await DB.createFranchise(testFranchise); //forces it in so we shouldn't need to be logged in as admin
+      return franchise;
+    }
+
+    async createStoreT(franchise){
+        const createRes = await DB.createStore(franchise.id, franchise); //{ id: insertResult.insertId, franchiseId, name: store.name };
+        return createRes;
+      }
+
 
 
 }

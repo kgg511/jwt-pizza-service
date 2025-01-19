@@ -48,6 +48,8 @@ test("make order", async()=>{
   const adminRes = await prob.signInAdmin(testAdmin);
   DB.addMenuItem(prob.randomMenuItem());
 
+  //create franchise, create store
+
   //order item
   const orderRes = await request(app).post('/api/order')
   .set("Content-Type", "application/json")
