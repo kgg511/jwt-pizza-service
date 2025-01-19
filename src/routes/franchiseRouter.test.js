@@ -22,20 +22,32 @@ beforeAll(async () => {
   testAdmin = await prob.createAdminUser(); //set up the admin (added to DB so no need to register)
 });
 
+
+async function createFranchise(auth_token, person_to_be_franchisee){
+  const name = prob.randomName(); //string name
+  const addRes = await request(app)
+  .post("/api/franchise")
+  .set('Content-Type', 'application/json').set("Authorization", `Bearer ${auth_token}`)
+  .send({"name": name, "admins": [{"email": person_to_be_franchisee.email}]});
+  return addRes;
+}
+
 // TESTS START HERE
 test("create franchise", async ()=>{ // create a franchise (NOT A FRANCHISE STORE))
     testAdmin = await prob.createAdminUser();
     const adminRes = await prob.signInAdmin(testAdmin);
-    const name = prob.randomName(); //string name
-    const addRes = await request(app)
-    .post("/api/franchise")
-    .set('Content-Type', 'application/json').set("Authorization", `Bearer ${adminRes.body.token}`)
-    .send({"name": name, "admins": [{"email": testUser.email}]});
+    const addRes = await createFranchise(adminRes.body.token, testUser);
     expect(addRes.status).toBe(200);
 
-    //we should sign out after
     await prob.signOutT(adminRes.body.token);
     //{ user: { id: 1, name: '常用名字', email: 'a@jwt.com', roles: [{ role: 'admin' }] }
+})
+
+test("create franchise unauthorized", async()=>{
+  const UserRes = await prob.signInAdmin(testUser);
+  const addRes = await createFranchise(UserRes.body.token, testUser);
+  expect(addRes.status).toBe(403);
+  await prob.signOutT(UserRes.body.token);
 })
 
 test("delete franchise", async ()=>{
@@ -72,7 +84,6 @@ test("create franchise store", async ()=>{
 
 test("delete franchise store", async ()=>{
   //create store
-  //
   testAdmin = await prob.createAdminUser();
   const adminRes = await prob.signInAdmin(testAdmin); //sign in admin uuuhhh the admin has no roles??
   const franchise = await prob.createFranchiseT(testUser); //manually shove into db
