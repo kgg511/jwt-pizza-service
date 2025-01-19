@@ -10,6 +10,9 @@ let testUserAuthToken;
 function randomName() {
     return Math.random().toString(36).substring(2, 12);
 }
+function expectValidJwt(potentialJwt) {
+  expect(potentialJwt).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
+}
 
 async function createAdminUser() {
   let user = { password: 'toomanysecrets', roles: [{ role: Role.Admin }] };
@@ -21,19 +24,10 @@ async function createAdminUser() {
 }
 
 async function createStoreT(franchise){
-  createRes = await DB.createStore(franchise.id, franchise);
-
-  //return { id: insertResult.insertId, franchiseId, name: store.name };
+  createRes = await DB.createStore(franchise.id, franchise); //{ id: insertResult.insertId, franchiseId, name: store.name };
   return createRes;
 }
 
-// async function createFranchiseStore(franchise){
-//   const franchise = await createFranchiseT(); //manually shove into db
-//   const adminRes = await signInAdmin(); //sign in admin
-
-//   //return { id: insertResult.insertId, franchiseId, name: store.name };
-//   return admin
-// }
 
 async function createFranchiseT(){
   //add franchise to the db
@@ -74,8 +68,11 @@ test("create franchise", async ()=>{ // create a franchise (NOT A FRANCHISE STOR
     expect(addRes.status).toBe(200);
 
     //we should sign out after
-    res = await signOutT(adminRes.body.token);
-    expect(addRes.status).toBe(200);
+    await signOutT(adminRes.body.token);
+
+    //getFranchises(authUser)
+    //franchises = await DB.getFranchises(adminRes);
+    //{ user: { id: 1, name: '常用名字', email: 'a@jwt.com', roles: [{ role: 'admin' }] }
 })
 
 test("delete franchise", async ()=>{
@@ -140,6 +137,3 @@ test("delete franchise store", async ()=>{
 
 
 
-function expectValidJwt(potentialJwt) {
-  expect(potentialJwt).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
-}
