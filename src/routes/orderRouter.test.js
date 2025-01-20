@@ -114,7 +114,7 @@ test("make order bad", async()=>{
 
   //create franchise, create store
   const createFranchiseRes = await prob.createFranchiseT(testUser);
-  const createStoreRes = await prob.createStoreT(createFranchiseRes);
+  await prob.createStoreT(createFranchiseRes);
 
   //renme id to menuid
   const addMenuId = {menuId: addRes.id, description: addRes.description, price: addRes.price};

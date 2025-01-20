@@ -151,9 +151,9 @@ test("delete franchise store bad store id", async ()=>{
   //create store
   testAdmin = await prob.createAdminUser();
   const adminRes = await prob.signInAdmin(testAdmin); //sign in admin uuuhhh the admin has no roles??
-  const franchise = await prob.createFranchiseT(testUser); //manually shove into db
+  await prob.createFranchiseT(testUser); //manually shove into db
   prob.signOutT(adminRes.body.token);
-  const user = { name: 'pizza diner', email: 'reg@test.com', password: 'a', email: Math.random().toString(36).substring(2, 12) + '@test.com'};
+  const user = { name: 'pizza diner', password: 'a', email: Math.random().toString(36).substring(2, 12) + '@test.com'};
   const registerRes = await request(app).post('/api/auth').send(user);
 
   const delRes = await request(app)

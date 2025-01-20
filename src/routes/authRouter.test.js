@@ -89,8 +89,8 @@ test("update fail", async()=>{
 })
 
 test("update user unauthorized by id", async()=>{
-  const user1 = { name: 'pizza diner', email: 'reg@test.com', password: 'a', email: Math.random().toString(36).substring(2, 12) + '@test.com'};
-  const user2 = { name: 'pizza diner', email: 'reg@test.com', password: 'a', email: Math.random().toString(36).substring(2, 12) + '@test.com'};
+  const user1 = { name: 'pizza diner', password: 'a', email: Math.random().toString(36).substring(2, 12) + '@test.com'};
+  const user2 = { name: 'pizza diner', password: 'a', email: Math.random().toString(36).substring(2, 12) + '@test.com'};
   const registerRes1 = await request(app).post('/api/auth').send(user1);
   const registerRes2 = await request(app).post('/api/auth').send(user2);
 
@@ -105,7 +105,6 @@ test("update user unauthorized by id", async()=>{
 })
 
 test("logout not logged in", async() =>{
-  const testAdmin = await prob.createAdminUser();
   const logoutRes = await request(app).delete("/api/auth")
   .set("Authorization", `Bearer howdy`)
   .send();
