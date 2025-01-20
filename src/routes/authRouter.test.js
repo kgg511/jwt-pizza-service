@@ -2,6 +2,7 @@ const request = require('supertest');
 const app = require('../service');
 const {Probar} = require("./routeTestFunctions.js");
 const prob = new Probar();
+//const { Role, DB } = require('../database/database.js');
 
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
 let testUserAuthToken;
@@ -59,9 +60,10 @@ test("update user", async() =>{
 })
 
 test("logout user", async() =>{
-  const loginRes = await prob.signInAdmin(testUser);
+  const testAdmin = await prob.createAdminUser();
+  const adminRes = await prob.signInAdmin(testAdmin);
   const logoutRes = await request(app).delete("/api/auth")
-  .set("Authorization", `Bearer ${loginRes.body.token}`)
+  .set("Authorization", `Bearer ${adminRes.body.token}`)
   .send();
   expect(logoutRes.status).toBe(200);
 })
