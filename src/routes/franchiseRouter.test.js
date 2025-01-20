@@ -50,8 +50,6 @@ async function createFranchiseStore(auth_token, franchise){
   return storeRes;
 }
 
-//    example: `curl -X POST localhost:3000/api/franchise -H 'Content-Type: application/json' -H 'Authorization: Bearer tttttt' -d '{"name": "pizzaPocket", "admins": [{"email": "f@jwt.com"}]}'`,
-//response: { name: 'pizzaPocket', admins: [{ email: 'f@jwt.com', id: 4, name: 'pizza franchisee' }], id: 1 },
 
 // TESTS START HERE
 test("create franchise", async ()=>{ // create a franchise (NOT A FRANCHISE STORE))

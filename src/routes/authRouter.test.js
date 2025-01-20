@@ -6,6 +6,13 @@ const prob = new Probar();
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
 let testUserAuthToken;
 
+async function registerUser(name, email, password){
+  const registerRes = await request(app).post("/api/auth")
+  .set('Content-Type', 'application/json')
+  .send({name: name, email: email, password: password});
+  return registerRes;
+}
+
 beforeAll(async () => {
   testUser.email = Math.random().toString(36).substring(2, 12) + '@test.com';
   const registerRes = await request(app).post('/api/auth').send(testUser);
@@ -26,9 +33,47 @@ test('login', async () => {
 //register a user with a franchise role
 
 test("register fail", async () =>{
-  const registerRes = await request(app).post("/api/auth")
-  .set('Content-Type', 'application/json')
-  .send({name: prob.randomName(), email: null, password: prob.randomName()});
+  const registerRes = await registerUser(prob.randomName(), null, prob.randomName());
   expect(registerRes.status).toBe(400);
 })
 
+test("update user", async() =>{
+  user = { name: prob.randomName(), email: prob.randomName(), password: prob.randomName() }
+  const registerRes = await registerUser(user.name, user.email, user.password);
+  expect(registerRes.status).toBe(200);
+
+  //await prob.signOutT(registerRes.body.token); //sign out 
+  testAdmin = await prob.createAdminUser();
+  const adminRes = await prob.signInAdmin(testAdmin);
+
+  updateRes = await request(app).put(`/api/auth/${registerRes.body.user.id}`)
+  .set('Content-Type', 'application/json')
+  .set("Authorization", `Bearer ${adminRes.body.token}`)
+  .send({email: "whoopity@jwt.com", password: "lo que quieras"});
+
+  expect(updateRes.status).toBe(200);
+
+  signOutRes = await prob.signOutT(adminRes.body.token);
+
+  // register response: { user: { id: 2, name: 'pizza diner', email: 'd@jwt.com', roles: [{ role: 'diner' }] }, token: 'tttttt' },
+})
+
+test("logout user", async() =>{
+  const loginRes = await prob.signInAdmin(testUser);
+  const logoutRes = await request(app).delete("/api/auth")
+  .set("Authorization", `Bearer ${loginRes.body.token}`)
+  .send();
+
+  expect(logoutRes.status).toBe(200);
+
+})
+
+
+// method: 'DELETE',
+// path: '/api/auth',
+// requiresAuth: true,
+// description: 'Logout a user',
+// example: `curl -X DELETE localhost:3000/api/auth -H 'Authorization: Bearer tttttt'`,
+// response: { message: 'logout successful' },
+// },
+// ];
