@@ -23,8 +23,7 @@ beforeAll(async () => {
 });
 
 
-async function createFranchise(auth_token, person_to_be_franchisee){
-  const name = prob.randomName(); //string name
+async function createFranchise(name, auth_token, person_to_be_franchisee){
   const addRes = await request(app)
   .post("/api/franchise")
   .set('Content-Type', 'application/json').set("Authorization", `Bearer ${auth_token}`)
@@ -58,15 +57,27 @@ async function createFranchiseStore(auth_token, franchise){
 test("create franchise", async ()=>{ // create a franchise (NOT A FRANCHISE STORE))
     testAdmin = await prob.createAdminUser();
     const adminRes = await prob.signInAdmin(testAdmin);
-    const addRes = await createFranchise(adminRes.body.token, testUser);
+    const name = prob.randomName(); //string name
+    const addRes = await createFranchise(name, adminRes.body.token, adminRes.body.user);
     expect(addRes.status).toBe(200);
+
+    //check if the user now has a franchise
+    getFranchiseRes = await request(app).get(`/api/franchise/${adminRes.body.user.id}`)
+    .set("Authorization", `Bearer ${adminRes.body.token}`)
+    .send();
+    expect(getFranchiseRes.status).toBe(200);
+
+    expect(getFranchiseRes.body[getFranchiseRes.body.length-1].name == name).toBe(true);
+    //response: [{ id: 2, name: 'pizzaPocket', admins: [], stores: [{ id: 4, name: 'SLC', totalRevenue: 0 }] }],
+
     await prob.signOutT(adminRes.body.token);
     //{ user: { id: 1, name: '常用名字', email: 'a@jwt.com', roles: [{ role: 'admin' }] }
 })
 
 test("create franchise unauthorized", async()=>{
   const UserRes = await prob.signInAdmin(testUser);
-  const addRes = await createFranchise(UserRes.body.token, testUser);
+  const name = prob.randomName();
+  const addRes = await createFranchise(name, UserRes.body.token, testUser);
   expect(addRes.status).toBe(403);
   await prob.signOutT(UserRes.body.token);
 })
