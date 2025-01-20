@@ -137,6 +137,8 @@ test("delete franchise store", async ()=>{
 
 })
 
-
-
+test("get franchises", async()=>{
+  const getRes = await request(app).get("/api/franchise").send();
+  expect(getRes.status).toBe(200);
+})
 
