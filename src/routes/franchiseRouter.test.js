@@ -4,6 +4,7 @@ const request = require('supertest');
 const app = require('../service');
 const {Probar} = require("./routeTestFunctions.js");
 const prob = new Probar();
+const { DB } = require('../database/database.js');
 
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a'};
 let testAdmin;
@@ -124,7 +125,6 @@ test("delete franchise store", async ()=>{
   const adminRes = await prob.signInAdmin(testAdmin); //sign in admin uuuhhh the admin has no roles??
   const franchise = await prob.createFranchiseT(testUser); //manually shove into db
   const createRes = await prob.createStoreT(franchise); // { id: insertResult.insertId, franchiseId, name: store.name }
-
   //we need an admin, a franchise, and a store
 
   const delRes = await request(app)
@@ -142,5 +142,28 @@ test("get franchises", async()=>{
   expect(getRes.status).toBe(200);
 })
 
+test("delete bad franchise", async()=>{
+  await expect(DB.deleteFranchise()).rejects.toThrow('unable to delete franchise');
+
+})
+
+test("delete franchise store bad store id", async ()=>{
+  //create store
+  testAdmin = await prob.createAdminUser();
+  const adminRes = await prob.signInAdmin(testAdmin); //sign in admin uuuhhh the admin has no roles??
+  const franchise = await prob.createFranchiseT(testUser); //manually shove into db
+  prob.signOutT(adminRes.body.token);
+  const user = { name: 'pizza diner', email: 'reg@test.com', password: 'a', email: Math.random().toString(36).substring(2, 12) + '@test.com'};
+  const registerRes = await request(app).post('/api/auth').send(user);
+
+  const delRes = await request(app)
+  .delete(`/api/franchise/-1/store/-1`)
+  .set("Authorization", `Bearer ${registerRes.body.token}`)
+  .send();
+
+  expect(delRes.status).toBe(403);
+  await prob.signOutT(adminRes.body.token);
+
+})
 
 

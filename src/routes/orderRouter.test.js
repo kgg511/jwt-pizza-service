@@ -1,4 +1,5 @@
 const { DB } = require('../database/database.js');
+
 jest.mock('node-fetch', () => jest.fn());
 const fetch = require('node-fetch'); // Import fetch after mocking
 const {Probar} = require("./routeTestFunctions.js");
