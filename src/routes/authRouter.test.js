@@ -88,3 +88,13 @@ test("update fail", async()=>{
   await expect(DB.updateUser(testAdmin.id, '', '')).rejects.toThrow('unknown user');
 })
 
+test("logout not logged in", async() =>{
+  const testAdmin = await prob.createAdminUser();
+  const logoutRes = await request(app).delete("/api/auth")
+  .set("Authorization", `Bearer howdy`)
+  .send();
+  expect(logoutRes.status).toBe(401);
+})
+
+
+
