@@ -88,6 +88,22 @@ test("update fail", async()=>{
   await expect(DB.updateUser(testAdmin.id, '', '')).rejects.toThrow('unknown user');
 })
 
+test("update user unauthorized by id", async()=>{
+  const user1 = { name: 'pizza diner', email: 'reg@test.com', password: 'a', email: Math.random().toString(36).substring(2, 12) + '@test.com'};
+  const user2 = { name: 'pizza diner', email: 'reg@test.com', password: 'a', email: Math.random().toString(36).substring(2, 12) + '@test.com'};
+  const registerRes1 = await request(app).post('/api/auth').send(user1);
+  const registerRes2 = await request(app).post('/api/auth').send(user2);
+
+  prob.signOutT(registerRes1.body.token);
+
+  const updateRes = await request(app).put(`/api/auth/${registerRes1.body.user.id}`)
+  .set('Content-Type', 'application/json')
+  .set("Authorization", `Bearer ${registerRes2.body.token}`)
+  .send({email: "whoopity@jwt.com", password: "lo que quieras"});
+
+  expect(updateRes.status).toBe(403);
+})
+
 test("logout not logged in", async() =>{
   const testAdmin = await prob.createAdminUser();
   const logoutRes = await request(app).delete("/api/auth")
