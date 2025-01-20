@@ -8,5 +8,8 @@
         "lines": 80,
         "statements": -10
       }
-    }
+    },
+    "include": [
+      "src/**/*.js"
+    ]
   }

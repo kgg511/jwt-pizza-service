@@ -1,4 +1,4 @@
-const { Role, DB } = require('../database/database.js');
+const { DB } = require('../database/database.js');
 
 const {Probar} = require("./routeTestFunctions.js");
 const request = require('supertest');
@@ -41,7 +41,7 @@ test("add item to menu", async()=>{
 
     //the most recent item in the list should look exactly like our item
     const menuRes = await request(app).get("/api/order/menu").send();
-    mostRecentItem = menuRes.body[menuRes.body.length - 1];
+    const mostRecentItem = menuRes.body[menuRes.body.length - 1];
     expect(mostRecentItem.title == newItem.title && mostRecentItem.description == newItem.description && 
       mostRecentItem.image == newItem.image && mostRecentItem.price == newItem.price
     ).toBe(true);

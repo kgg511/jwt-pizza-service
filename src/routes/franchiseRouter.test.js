@@ -1,5 +1,5 @@
 
-const { Role, DB } = require('../database/database.js');
+// const { Role, DB } = require('../database/database.js');
 const request = require('supertest');
 const app = require('../service');
 const {Probar} = require("./routeTestFunctions.js");
@@ -60,7 +60,7 @@ test("create franchise", async ()=>{ // create a franchise (NOT A FRANCHISE STOR
     expect(addRes.status).toBe(200);
 
     //check if the user now has a franchise
-    getFranchiseRes = await request(app).get(`/api/franchise/${adminRes.body.user.id}`)
+    const getFranchiseRes = await request(app).get(`/api/franchise/${adminRes.body.user.id}`)
     .set("Authorization", `Bearer ${adminRes.body.token}`)
     .send();
     expect(getFranchiseRes.status).toBe(200);
