@@ -1,9 +1,9 @@
 const { DB } = require('../database/database.js');
-
+jest.mock('node-fetch', () => jest.fn());
+const fetch = require('node-fetch'); // Import fetch after mocking
 const {Probar} = require("./routeTestFunctions.js");
 const request = require('supertest');
 const app = require('../service');
-
 const prob = new Probar();
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a'};
 let testAdmin;
@@ -13,13 +13,19 @@ if (process.env.VSCODE_INSPECTOR_OPTIONS) {
   jest.setTimeout(60 * 1000 * 5); // 5 minutes
 }
 
+beforeEach(() => {
+  jest.clearAllMocks(); // Clear any previous mock state
+  fetch.mockClear();
+});
 
 beforeAll(async () => {
   //register user
-testUser.email = Math.random().toString(36).substring(2, 12) + '@test.com';
-const registerRes = await request(app).post('/api/auth').send(testUser);
-testUserAuthToken = registerRes.body.token;
-prob.expectValidJwt(testUserAuthToken);
+
+  // testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a'};
+  testUser.email = Math.random().toString(36).substring(2, 12) + '@test.com';
+  const registerRes = await request(app).post('/api/auth').send(testUser);
+  testUserAuthToken = registerRes.body.token;
+  prob.expectValidJwt(testUserAuthToken);
 });
 
 async function add_item(token, item){
@@ -29,7 +35,6 @@ async function add_item(token, item){
     .send(item);
   return addRes;
 }
-
 
 ///TESTS
 test("add item to menu", async()=>{
@@ -71,6 +76,13 @@ test("make order", async()=>{
   const addMenuId = {menuId: addRes.id, description: addRes.description, price: addRes.price};
   const mail = {franchiseId: createFranchiseRes.id, storeId: createStoreRes.id, items: [addMenuId]};
 
+  fetch.mockResolvedValueOnce({
+    ok: true, // Simulates a failed HTTP request
+    status: 200,
+    json: jest.fn().mockResolvedValue({
+      reportUrl: 'http://example.com/sucess',
+    }),
+  });
   //order item
   const orderRes = await request(app).post('/api/order')
   .set("Content-Type", "application/json")
@@ -92,3 +104,35 @@ test("make order", async()=>{
   await prob.signOutT(adminRes.body.token);
 })
 
+test("make order bad", async()=>{
+  //add item to menu, order said item
+  testAdmin = await prob.createAdminUser();
+  const adminRes = await prob.signInAdmin(testAdmin);
+  const newItem = prob.randomMenuItem();
+  const addRes = await DB.addMenuItem(newItem); //{ ...item, id: addResult.insertId }
+
+  //create franchise, create store
+  const createFranchiseRes = await prob.createFranchiseT(testUser);
+  const createStoreRes = await prob.createStoreT(createFranchiseRes);
+
+  //renme id to menuid
+  const addMenuId = {menuId: addRes.id, description: addRes.description, price: addRes.price};
+  const mail = {franchiseId: createFranchiseRes.id, storeId: 9, items: [addMenuId]};
+
+  fetch.mockResolvedValueOnce({
+    ok: false, // Simulates a failed HTTP request
+    status: 500,
+    json: jest.fn().mockResolvedValue({
+      reportUrl: 'http://example.com/fail',
+    }),
+  });
+
+  const orderRes = await request(app).post('/api/order')
+  .set("Content-Type", "application/json")
+  .set("Authorization", `Bearer ${adminRes.body.token}`)
+  .send(mail);
+
+  expect(orderRes.status).toBe(500);
+
+  await prob.signOutT(adminRes.body.token);
+})

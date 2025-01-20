@@ -2,15 +2,19 @@ const request = require('supertest');
 const app = require('../service');
 const {Probar} = require("./routeTestFunctions.js");
 const prob = new Probar();
-//const { Role, DB } = require('../database/database.js');
+const { Role, DB } = require('../database/database.js');
+// const { StatusCodeError } = require('../endpointHelper.js');
 
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
 let testUserAuthToken;
+if (process.env.VSCODE_INSPECTOR_OPTIONS) {
+  jest.setTimeout(60 * 1000 * 5); // 5 minutes
+}
 
-async function registerUser(name, email, password){
+async function registerUser(n, e, p){
   const registerRes = await request(app).post("/api/auth")
   .set('Content-Type', 'application/json')
-  .send({name: name, email: email, password: password});
+  .send({name: n, email: e, password: p});
   return registerRes;
 }
 
@@ -38,6 +42,17 @@ test("register fail", async () =>{
   expect(registerRes.status).toBe(400);
 })
 
+test("register franchise", async()=>{
+  let user = { name: prob.randomName(), email:`${prob.randomName()}@franchise.com`, password: 'toomanysecrets' };
+  const registerRes = await registerUser(user.name, user.email, user.password);
+  expect(registerRes.status).toBe(200);
+  await prob.createAdminUser();
+  const franchise = await prob.createFranchiseT(user);  //give them a franchise
+  user.roles = [{ object: franchise.name, role: Role.Franchisee }]
+  await DB.addUser(user);
+
+})
+
 test("update user", async() =>{
   const user = { name: prob.randomName(), email: prob.randomName(), password: prob.randomName() }
   const registerRes = await registerUser(user.name, user.email, user.password);
@@ -55,7 +70,6 @@ test("update user", async() =>{
   expect(updateRes.status).toBe(200);
 
   await prob.signOutT(adminRes.body.token);
-
   // register response: { user: { id: 2, name: 'pizza diner', email: 'd@jwt.com', roles: [{ role: 'diner' }] }, token: 'tttttt' },
 })
 
@@ -67,3 +81,10 @@ test("logout user", async() =>{
   .send();
   expect(logoutRes.status).toBe(200);
 })
+
+test("update fail", async()=>{
+  const testAdmin = await prob.createAdminUser();
+  await prob.signInAdmin(testAdmin);
+  await expect(DB.updateUser(testAdmin.id, '', '')).rejects.toThrow('unknown user');
+})
+

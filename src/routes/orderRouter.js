@@ -1,3 +1,4 @@
+const fetch = require('node-fetch'); // Import after mocking
 const express = require('express');
 const config = require('../config.js');
 const { Role, DB } = require('../database/database.js');

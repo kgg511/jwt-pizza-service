@@ -37,6 +37,8 @@ class Probar{
         user = await DB.addUser(user);
         return { ...user, password: 'toomanysecrets' };
       }
+    
+      
     async signInAdmin(testAdmin){ //signs in the test Admin created in the before all
         const adminRes = await request(app).put('/api/auth').send(testAdmin); //sign in
         expect(adminRes.status).toBe(200);
