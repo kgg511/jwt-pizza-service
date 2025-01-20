@@ -112,5 +112,15 @@ test("logout not logged in", async() =>{
   expect(logoutRes.status).toBe(401);
 })
 
+test("other endpoints", async()=>{
+  const response = await request(app).get('/api/docs');
+  expect(response.status).toBe(200);
 
+  const response2 = await request(app).get('/');
+  expect(response2.status).toBe(200);
+
+  const response3 = await request(app).get('/q'); //not a real links
+  expect(response3.status).toBe(404);
+
+})
 
