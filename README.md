@@ -25,7 +25,7 @@ export default {
   },
   factory: {
     url: 'https://pizza-factory.cs329.click',
-    apiKey: 'YES_do_the_factory',
+    apiKey: 'secret key here',
   },
 };
 ```
