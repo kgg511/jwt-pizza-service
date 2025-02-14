@@ -143,6 +143,10 @@ jobs:
           container-name: jwt-pizza-service
           image: ${{ steps.build-image.outputs.image }}
 
+      
+      - name: Debug Task Definition
+        run: cat task-definition.json
+
       - name: Deploy new task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
