@@ -6,6 +6,7 @@ const version = require('./version.json');
 const config = require('./config.js');
 
 const app = express();
+app.use(metrics.requestTracker); //for grafana!
 app.use(express.json());
 app.use(setAuthUser);
 app.use((req, res, next) => {
