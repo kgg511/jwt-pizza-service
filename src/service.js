@@ -6,8 +6,11 @@ const version = require('./version.json');
 const config = require('./config.js');
 
 const app = express();
-app.use(metrics.requestTracker); //for grafana!
+
+const metrics = require("./metrics.js");
 app.use(express.json());
+app.use(metrics.requestTracker); //for grafana!
+
 app.use(setAuthUser);
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
