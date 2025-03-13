@@ -1,6 +1,10 @@
 const os = require('os');
 const config = require('./config.js');
 const requests = {};
+const endpoints = {}; // for storing endpoint
+
+let success = 0; // number of successful logins/register
+let failed = 0 // number of failed logins/register
 
 
 // required metrics:
@@ -11,14 +15,41 @@ const requests = {};
 // Pizzas: sold/minute, creation failures, revenue/minute
 // latency: service endpoint, pizza creation
 
+//active user: store all the ids & time, sorted by time
+// remove the ones within a certain time frame, add users 
+// user and the last time they did something..if you are in there you are active
 
+// authentication attempts: just look for login requests, and 
+// whether they succeed or not
+
+// track the number of times accessing the login/register endpoint and succeeding
 // function to track the requests (GET, POST, PUT, DELETE)
 function requestTracker(req, res, next) {
   const requestType = req.method;
-  requests[requestType] = (requests[requestType] || 0) + 1;
+  requests[requestType] = (requests[requestType] || 0) + 1; //get/push/put/delete
+
+  if (req.path == "/api/auth" && (req.method == "POST" || req.method == "PUT")) {
+    res.on("finish", () => {
+      if (res.statusCode == 200) {
+        success++;
+        console.log("Success: ", success);
+      }
+      else{
+        failed++;
+        console.log("fail: ", failed);
+      }
+    });
+  }
   console.log("Request Tracker: ", requestType);
     next();
   }
+
+
+// if it's login or register, we track it and then check if it was successful
+
+
+  // incorrect order
+  // endpoint in pizza factory, order 20 pizzas + automatically fails
 
 function getRequests(){
   const GET = requests['GET'] || 0;
@@ -93,6 +124,22 @@ function setMemoryCpu(metricsArray){
     metricsArray.push(mem_metric);
 }
 
+function metric_object(name, value, type, unit){
+  return {
+    metricName: name,
+    metricValue: value,
+    type: type,
+    unit: unit
+  }
+}
+
+function setAuthMetrics(metricsArray){
+  const success_metric = metric_object("Success", success, "sum", '1');
+  const failed_metric = metric_object("Fail", failed, "sum", '1');
+  metricsArray.push(success_metric);
+  metricsArray.push(failed_metric);
+}
+
 
 // purchase metrics (REMEMBER YOU CAN CHANGE THIS)
 function sendMetricsPeriodically(period) {
@@ -101,11 +148,7 @@ function sendMetricsPeriodically(period) {
         let metricsArray = [];
         setMemoryCpu(metricsArray);
         setRequests(metricsArray);
-        // httpMetrics(buf); //use: buf.addMetric('http_requests', 100);
-        // systemMetrics(buf);
-        // userMetrics(buf);
-        // purchaseMetrics(buf);
-        // authMetrics(buf);
+        setAuthMetrics(metricsArray)
         sendMetricToGrafana(metricsArray);
       } catch (error) {
         console.log('Error sending metrics', error);
