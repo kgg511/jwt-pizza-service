@@ -1,7 +1,9 @@
 const os = require('os');
 const config = require('./config.js');
+
 const requests = {};
 const endpoints = {}; // for storing endpoint
+
 
 let success = 0; // number of successful logins/register
 let failed = 0 // number of failed logins/register
@@ -14,7 +16,8 @@ let numRequestsCompleted = 0; // number of requests completed
 let sumRequestDuration = 0; // sum of request durations
 
 let sumDurationPizza = 0; // sum time spent on pizza creation
-// let numPizzaCreations = 0; // number of pizza creations
+
+let activeUsers = [];
 
 // required metrics:
 // HTTP requests by method/minute: total requests, get/put/post/delete
@@ -24,30 +27,62 @@ let sumDurationPizza = 0; // sum time spent on pizza creation
 // Pizzas: sold/minute, creation failures, revenue/minute
 // latency: service endpoint, pizza creation
 
-//active user: store all the ids & time, sorted by time
-// remove the ones within a certain time frame, add users 
-// user and the last time they did something..if you are in there you are active
+function updateActiveUser(token, time){
+  // check if token is in the list
+  activeTime = 180000// 3 minutes in milliseconds
+  userIndex = activeUsers.findIndex(user => user.token === token);
+  if(userIndex != -1){ // if it's in the list
+    activeUsers.splice(userIndex, 1); // remove 
+  }
+  activeUsers.push({token: token, time: time}); // put at end
 
-// authentication attempts: just look for login requests, and 
-// whether they succeed or not
+  // remove inactive users
+  const currentTime = Date.now();
+  const newActiveIndex = 0;
+  forEach(activeUsers, (user, index) => {
+    if(currentTime - user.time < activeTime){
+      newActiveIndex = index;
+    }
 
-// track the number of times accessing the login/register endpoint and succeeding
+  });
+  activeUsers = activeUsers.slice(newActiveIndex);
+}
+
 // function to track the requests (GET, POST, PUT, DELETE)
 function requestTracker(req, res, next) {
   const requestType = req.method;
+  const path = req.path;
   requests[requestType] = (requests[requestType] || 0) + 1; //get/push/put/delete
-  const startTime = Date.now();
-  // track the time it takes to process the request
+  const startTime = Date.now(); // track the time it takes to process the request
+  const token = req.headers.authorization;
+
+  if (token && token.split(' ')[1]){ // if request made with a token
+    const bearerToken = token.split(' ')[1];
+    console.log("Bearer Token:", bearerToken, req.user);
+
+    if (path == "/api/auth" && requestType == "DELETE"){ // logout removal from active users
+      const userIndex = activeUsers.findIndex(user => user.token === bearerToken);
+      if(userIndex != -1){ 
+        activeUsers.splice(userIndex, 1);
+        console.log("user no longer active due to logging out");
+      }
+    }
+    else{ // update active user
+      updateActiveUser(bearerToken, startTime);
+    }
+  }
+
   res.on("finish", () => {
     numRequestsCompleted++;
-    sumRequestDuration += Date.now() - startTime;
-    console.log("Request duration: ", Date.now() - startTime);
-  });
+    sumRequestDuration += Date.now() - startTime; // time request took to execute
 
-  // catches login/register stuff
-  if (req.path == "/api/auth" && (req.method == "POST" || req.method == "PUT")) {
-    res.on("finish", () => {
-      if (res.statusCode == 200) {
+    // login/register
+    if (path == "/api/auth" && (requestType == "POST" || requestType == "PUT")){
+      if (req.body.token != undefined) { // login/register add to active users
+        updateActiveUser(req.body.token, startTime);
+      };
+
+      if (res.statusCode == 200) { //authentication
         success++;
         console.log("Success: ", success);
       }
@@ -55,44 +90,35 @@ function requestTracker(req, res, next) {
         failed++;
         console.log("fail: ", failed);
       }
-    });
-  }
+    }
 
-  // catch pizza related requests
-  // # sold, # create failures, revenue/minute
-  else if(req.path == "/api/order" && req.method == "POST"){
-    res.on("finish", () => {
+    // order pizza: # sold, # create failures, revenue/minute
+    else if(path == "/api/order" && requestType == "POST"){
       if (res.statusCode == 200) {
-        console.log("Pizzas sold: ", req.body.items.length); //compare the two to see if change
-        pizzasSold += req.body.items.length;
+        pizzasSold += req.body.items.length; // number of pizzas sold
 
         // calculate revenue
         req.body.items.forEach((item) => {
           console.log("Price: ", item.price);
           revenue += item.price;
         });
-        sumDurationPizza += Date.now() - startTime;
-
+        sumDurationPizza += Date.now() - startTime; // time to create pizza
       }
       else{ 
         creationFailures += 1;
         console.log("Pizza creation failed");
       }
     }
-  );
+
+  });
 
 
-  }
+
+  console.log("Request duration: ", Date.now() - startTime);
   console.log("Request Tracker: ", requestType);
     next();
   }
 
-
-// if it's login or register, we track it and then check if it was successful
-
-
-  // incorrect order
-  // endpoint in pizza factory, order 20 pizzas + automatically fails
 
 function getRequests(){
   const GET = requests['GET'] || 0;
@@ -120,6 +146,10 @@ function getLatencyRequests(){
   avgEndpointTime = numRequestsCompleted === 0 ? 0 : sumRequestDuration / numRequestsCompleted;
   avgPizzaTime = pizzasSold === 0 ? 0 : sumDurationPizza / pizzasSold;
   return [Math.ceil(avgEndpointTime),  Math.ceil(avgPizzaTime)];
+}
+
+function getActiveUsers(){
+  return activeUsers.length;
 }
 
 function setRequests(metricsArray){
@@ -206,11 +236,18 @@ function setPizzaMetrics(metricsArray){
 function setLatencyMetrics(metricsArray){
   const [avgEndpointTime, avgPizzaTime] = getLatencyRequests();
   //avg time...
+  const highbound_endpoint = metric_object("Max Latency Desired", 50, "gauge", 'ms');
   const endpoint_metric = metric_object("EndpointLatency", avgEndpointTime, "gauge", 'ms');
   const pizza_metric = metric_object("PizzaLatency", avgPizzaTime, "gauge", 'ms');
+  metricsArray.push(highbound_endpoint);
   metricsArray.push(endpoint_metric);
   metricsArray.push(pizza_metric);
   console.log("Latency", avgEndpointTime, avgPizzaTime);
+}
+
+function setActiveUsers(metricsArray){
+  const active_metric = metric_object("ActiveUsers", getActiveUsers(), "sum", '1');
+  metricsArray.push(active_metric);
 }
 
 
@@ -223,7 +260,10 @@ function sendMetricsPeriodically(period) {
         setRequests(metricsArray);
         setAuthMetrics(metricsArray); 
         setPizzaMetrics(metricsArray);
+        setActiveUsers(metricsArray);
         setLatencyMetrics(metricsArray);
+        console.log(activeUsers);
+        // console.log(activeUsers.length);
         sendMetricToGrafana(metricsArray);
       } catch (error) {
         console.log('Error sending metrics', error);
@@ -232,7 +272,6 @@ function sendMetricsPeriodically(period) {
   }
 
 
-//attributes { endpoint: 'getGreeting' }
 
 // Code for sending all the metrics over to grafana
 function createSingleMetric(metricName, metricValue, type, unit, dataType = "asInt", attributes = {}) {
