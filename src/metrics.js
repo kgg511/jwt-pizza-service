@@ -38,14 +38,15 @@ function updateActiveUser(token, time){
 
   // remove inactive users
   const currentTime = Date.now();
-  const newActiveIndex = 0;
-  forEach(activeUsers, (user, index) => {
+  let newActiveIndex = 0;
+  activeUsers.forEach((user, index) => {
     if(currentTime - user.time < activeTime){
       newActiveIndex = index;
     }
-
   });
-  activeUsers = activeUsers.slice(newActiveIndex);
+
+  if(newActiveIndex > 0){activeUsers = activeUsers.slice(newActiveIndex);}
+  
 }
 
 // function to track the requests (GET, POST, PUT, DELETE)
@@ -111,8 +112,6 @@ function requestTracker(req, res, next) {
     }
 
   });
-
-
 
   console.log("Request duration: ", Date.now() - startTime);
   console.log("Request Tracker: ", requestType);
