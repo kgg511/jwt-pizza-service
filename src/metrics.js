@@ -5,10 +5,16 @@ const endpoints = {}; // for storing endpoint
 
 let success = 0; // number of successful logins/register
 let failed = 0 // number of failed logins/register
+
 let creationFailures = 0; //number of failed pizza creations
 let pizzasSold = 0; // number of pizzas sold
 let revenue = 0; // revenue from pizzas sold
 
+let numRequestsCompleted = 0; // number of requests completed
+let sumRequestDuration = 0; // sum of request durations
+
+let sumDurationPizza = 0; // sum time spent on pizza creation
+// let numPizzaCreations = 0; // number of pizza creations
 
 // required metrics:
 // HTTP requests by method/minute: total requests, get/put/post/delete
@@ -30,6 +36,13 @@ let revenue = 0; // revenue from pizzas sold
 function requestTracker(req, res, next) {
   const requestType = req.method;
   requests[requestType] = (requests[requestType] || 0) + 1; //get/push/put/delete
+  const startTime = Date.now();
+  // track the time it takes to process the request
+  res.on("finish", () => {
+    numRequestsCompleted++;
+    sumRequestDuration += Date.now() - startTime;
+    console.log("Request duration: ", Date.now() - startTime);
+  });
 
   // catches login/register stuff
   if (req.path == "/api/auth" && (req.method == "POST" || req.method == "PUT")) {
@@ -44,10 +57,6 @@ function requestTracker(req, res, next) {
       }
     });
   }
-  //  response, length of items is the number
-
-  // method: 'POST',
-  //   path: '/api/order',
 
   // catch pizza related requests
   // # sold, # create failures, revenue/minute
@@ -56,6 +65,14 @@ function requestTracker(req, res, next) {
       if (res.statusCode == 200) {
         console.log("Pizzas sold: ", req.body.items.length); //compare the two to see if change
         pizzasSold += req.body.items.length;
+
+        // calculate revenue
+        req.body.items.forEach((item) => {
+          console.log("Price: ", item.price);
+          revenue += item.price;
+        });
+        sumDurationPizza += Date.now() - startTime;
+
       }
       else{ 
         creationFailures += 1;
@@ -97,6 +114,12 @@ function getMemoryUsagePercentage() {
   const usedMemory = totalMemory - freeMemory;
   const memoryUsage = (usedMemory / totalMemory) * 100;
   return Math.ceil(memoryUsage);
+}
+
+function getLatencyRequests(){
+  avgEndpointTime = numRequestsCompleted === 0 ? 0 : sumRequestDuration / numRequestsCompleted;
+  avgPizzaTime = pizzasSold === 0 ? 0 : sumDurationPizza / pizzasSold;
+  return [Math.ceil(avgEndpointTime),  Math.ceil(avgPizzaTime)];
 }
 
 function setRequests(metricsArray){
@@ -152,12 +175,13 @@ function setMemoryCpu(metricsArray){
     metricsArray.push(mem_metric);
 }
 
-function metric_object(name, value, type, unit){
+function metric_object(name, value, type, unit, dataType = "asInt"){
   return {
     metricName: name,
     metricValue: value,
     type: type,
-    unit: unit
+    unit: unit,
+    dataType: dataType
   }
 }
 
@@ -172,9 +196,21 @@ function setAuthMetrics(metricsArray){
 function setPizzaMetrics(metricsArray){
   const pizzas_metric = metric_object("PizzasSold", pizzasSold, "sum", '1');
   const creation_metric = metric_object("CreationFailures", creationFailures, "sum", '1');
+  const revenue_metric = metric_object("Revenue", revenue, "sum", '1', "asDouble");
   metricsArray.push(pizzas_metric);
   metricsArray.push(creation_metric);
-  console.log("Pizza", pizzasSold, creationFailures);
+  metricsArray.push(revenue_metric);
+  console.log("Pizza", pizzasSold, creationFailures, revenue);
+}
+
+function setLatencyMetrics(metricsArray){
+  const [avgEndpointTime, avgPizzaTime] = getLatencyRequests();
+  //avg time...
+  const endpoint_metric = metric_object("EndpointLatency", avgEndpointTime, "gauge", 'ms');
+  const pizza_metric = metric_object("PizzaLatency", avgPizzaTime, "gauge", 'ms');
+  metricsArray.push(endpoint_metric);
+  metricsArray.push(pizza_metric);
+  console.log("Latency", avgEndpointTime, avgPizzaTime);
 }
 
 
@@ -187,6 +223,7 @@ function sendMetricsPeriodically(period) {
         setRequests(metricsArray);
         setAuthMetrics(metricsArray); 
         setPizzaMetrics(metricsArray);
+        setLatencyMetrics(metricsArray);
         sendMetricToGrafana(metricsArray);
       } catch (error) {
         console.log('Error sending metrics', error);
@@ -198,7 +235,7 @@ function sendMetricsPeriodically(period) {
 //attributes { endpoint: 'getGreeting' }
 
 // Code for sending all the metrics over to grafana
-function createSingleMetric(metricName, metricValue, type, unit, attributes = {}) {
+function createSingleMetric(metricName, metricValue, type, unit, dataType = "asInt", attributes = {}) {
   attributes = { ...attributes, source: config.source };
     const OneMetric = {
       name: metricName,
@@ -206,7 +243,7 @@ function createSingleMetric(metricName, metricValue, type, unit, attributes = {}
       [type]: {
         dataPoints: [
           {
-            asInt: metricValue,
+            [dataType]: metricValue,
             timeUnixNano: Date.now() * 1000000,
             attributes: []
           },
@@ -238,7 +275,7 @@ function getAllMetrics(metricsArray){
         {
           scopeMetrics: [
             {
-              metrics: metricsArray.map((metric) => createSingleMetric(metric.metricName, metric.metricValue, metric.type, metric.unit))
+              metrics: metricsArray.map((metric) => createSingleMetric(metric.metricName, metric.metricValue, metric.type, metric.unit, metric.dataType))
             },
           ],
         },
