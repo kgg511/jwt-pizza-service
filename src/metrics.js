@@ -5,6 +5,9 @@ const endpoints = {}; // for storing endpoint
 
 let success = 0; // number of successful logins/register
 let failed = 0 // number of failed logins/register
+let creationFailures = 0; //number of failed pizza creations
+let pizzasSold = 0; // number of pizzas sold
+let revenue = 0; // revenue from pizzas sold
 
 
 // required metrics:
@@ -28,6 +31,7 @@ function requestTracker(req, res, next) {
   const requestType = req.method;
   requests[requestType] = (requests[requestType] || 0) + 1; //get/push/put/delete
 
+  // catches login/register stuff
   if (req.path == "/api/auth" && (req.method == "POST" || req.method == "PUT")) {
     res.on("finish", () => {
       if (res.statusCode == 200) {
@@ -39,6 +43,28 @@ function requestTracker(req, res, next) {
         console.log("fail: ", failed);
       }
     });
+  }
+  //  response, length of items is the number
+
+  // method: 'POST',
+  //   path: '/api/order',
+
+  // catch pizza related requests
+  // # sold, # create failures, revenue/minute
+  else if(req.path == "/api/order" && req.method == "POST"){
+    res.on("finish", () => {
+      if (res.statusCode == 200) {
+        console.log("Pizzas sold: ", req.body.items.length); //compare the two to see if change
+        pizzasSold += req.body.items.length;
+      }
+      else{ 
+        creationFailures += 1;
+        console.log("Pizza creation failed");
+      }
+    }
+  );
+
+
   }
   console.log("Request Tracker: ", requestType);
     next();
@@ -62,7 +88,7 @@ function getRequests(){
 
 function getCpuUsagePercentage() {
   const cpuUsage = os.loadavg()[0] / os.cpus().length;
-  return cpuUsage.toFixed(2) * 100;
+  return Math.ceil(cpuUsage * 100);
 }
 
 function getMemoryUsagePercentage() {
@@ -75,6 +101,7 @@ function getMemoryUsagePercentage() {
 
 function setRequests(metricsArray){
   const {GET, POST, PUT, total} = getRequests();
+  console.log(GET, POST, PUT, total);
   const get_metric = {
     metricName: "GET",
     metricValue: GET,
@@ -108,6 +135,7 @@ function setRequests(metricsArray){
 function setMemoryCpu(metricsArray){
     const mem = getMemoryUsagePercentage();
     const cpu = getCpuUsagePercentage();
+    console.log("MEMCPU", mem, cpu);
     const cpu_metric = {
       metricName: "CPU",
       metricValue: cpu,
@@ -136,8 +164,17 @@ function metric_object(name, value, type, unit){
 function setAuthMetrics(metricsArray){
   const success_metric = metric_object("Success", success, "sum", '1');
   const failed_metric = metric_object("Fail", failed, "sum", '1');
+  console.log("Auth", success, failed);
   metricsArray.push(success_metric);
   metricsArray.push(failed_metric);
+}
+
+function setPizzaMetrics(metricsArray){
+  const pizzas_metric = metric_object("PizzasSold", pizzasSold, "sum", '1');
+  const creation_metric = metric_object("CreationFailures", creationFailures, "sum", '1');
+  metricsArray.push(pizzas_metric);
+  metricsArray.push(creation_metric);
+  console.log("Pizza", pizzasSold, creationFailures);
 }
 
 
@@ -148,7 +185,8 @@ function sendMetricsPeriodically(period) {
         let metricsArray = [];
         setMemoryCpu(metricsArray);
         setRequests(metricsArray);
-        setAuthMetrics(metricsArray)
+        setAuthMetrics(metricsArray); 
+        setPizzaMetrics(metricsArray);
         sendMetricToGrafana(metricsArray);
       } catch (error) {
         console.log('Error sending metrics', error);
