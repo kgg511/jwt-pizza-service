@@ -17,7 +17,7 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
-  startTime = Date.now()
+  let startTime = Date.now()
   // req.path is correct, BEFORE RUNNING THE REQUEST
   console.log(req.method, req.baseUrl, req.originalUrl, req.path);
   res.on("finish", () => {
