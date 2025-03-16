@@ -4,12 +4,11 @@ const orderRouter = require('./routes/orderRouter.js');
 const franchiseRouter = require('./routes/franchiseRouter.js');
 const version = require('./version.json');
 const config = require('./config.js');
-
 const app = express();
 
-const metrics = require("./metrics.js");
+const { METRIC: Metric } = require("./metrics.js");
 app.use(express.json());
-app.use(metrics.requestTracker); //for grafana!
+app.use(Metric.requestTracker); //for grafana!
 
 app.use(setAuthUser);
 app.use((req, res, next) => {
@@ -17,6 +16,15 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  startTime = Date.now()
+  // req.path is correct, BEFORE RUNNING THE REQUEST
+  console.log(req.method, req.baseUrl, req.originalUrl, req.path);
+  res.on("finish", () => {
+    console.log(req.method, req.baseUrl, req.originalUrl, req.path);
+    Metric.updateAfterRequest(res, req, startTime);
+  });
+
   next();
 });
 
