@@ -20,6 +20,27 @@ class Logger {
     next();
   };
 
+  DBLogger(query, values){
+    //SQL queries
+
+    // sanitize for our one password case (works so long as password is always the last value)
+    if (query.toLowerCase().includes("password")){
+        values[2] = "*****"; 
+    }
+    const logData = {
+        query: query,
+        params: values? values : ["None"]
+    };
+    this.log('info', 'db', logData);
+    // I don't think there can be a warn level for a query?
+  }
+
+  // sanitize
+  // const userResult = await this.query(connection, `INSERT INTO user (name, email, password) VALUES (?, ?, ?)`, [user.name, user.email, hashedPassword]
+
+  // what is confidential: password,
+  // is userID? objectId?
+
   log(level, type, logData) {
     const labels = { component: config.logging.source, level: level, type: type };
     const values = [this.nowString(), this.sanitize(logData)];
@@ -38,7 +59,7 @@ class Logger {
     return (Math.floor(Date.now()) * 1000000).toString();
   }
 
-  sanitize(logData) {
+  sanitize(logData) { //for HTTP requests
     logData = JSON.stringify(logData);
     return logData.replace(/\\"password\\":\s*\\"[^"]*\\"/g, '\\"password\\": \\"*****\\"');
   }
