@@ -4,11 +4,13 @@ const orderRouter = require('./routes/orderRouter.js');
 const franchiseRouter = require('./routes/franchiseRouter.js');
 const version = require('./version.json');
 const config = require('./config.js');
+const logger = require('./logger.js');
 const app = express();
 
 const { METRIC: Metric } = require("./metrics.js");
 app.use(express.json());
 app.use(Metric.requestTracker); //for grafana!
+app.use(logger.httpLogger);
 
 app.use(setAuthUser);
 app.use((req, res, next) => {
