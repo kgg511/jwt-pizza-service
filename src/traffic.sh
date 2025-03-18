@@ -22,7 +22,7 @@ trap cleanup SIGINT
 while true; do
   curl -s "$host/api/order/menu" > /dev/null
   echo "Requesting menu..."
-  sleep 3
+  sleep 15
 done &
 pid1=$!
 
@@ -39,7 +39,7 @@ while true; do
   response=$(curl -s -X PUT $host/api/auth -d '{"email":"f@jwt.com", "password":"franchisee"}' -H 'Content-Type: application/json')
   token=$(echo $response | jq -r '.token')
   echo "Login franchisee..."
-  sleep 110
+  sleep 100
   curl -s -X DELETE $host/api/auth -H "Authorization: Bearer $token" > /dev/null
   echo "Logging out franchisee..."
   sleep 10
