@@ -11,7 +11,7 @@ host=$1
 # Function to cleanly exit
 cleanup() {
   echo "Terminating background processes..."
-  kill $pid1 $pid2 $pid3 $pid4
+  kill $pid1 $pid2 $pid3 $pid4 $pid5
   exit 0
 }
 
@@ -56,10 +56,24 @@ while true; do
   sleep 20
   curl -s -X DELETE $host/api/auth -H "Authorization: Bearer $token" > /dev/null
   echo "Logging out diner..."
-  sleep 30
+  sleep 15
 done &
 pid4=$!
 
+# BOGUS ORDER
+while true; do
+  response=$(curl -s -X PUT $host/api/auth -d '{"email":"d@jwt.com", "password":"diner"}' -H 'Content-Type: application/json')
+  token=$(echo $response | jq -r '.token')
+  echo "Login diner..."
+  curl -s -X POST $host/api/order -H 'Content-Type: application/json' -d '{"franchiseId": 1, "storeId":1, "items":[{ "menuId": 1, "description": "Veggie", "price": 0.05 }]}'  -H "Authorization: Bearer whoopity" > /dev/null
+  echo "Bought a pizza BADLY..."
+  sleep 20
+  curl -s -X DELETE $host/api/auth -H "Authorization: Bearer $token" > /dev/null
+  echo "Logging out diner..."
+  sleep 30
+done &
+pid5=$!
+
 
 # Wait for the background processes to complete
-wait $pid1 $pid2 $pid3 $pid4
+wait $pid1 $pid2 $pid3 $pid4 $pid5

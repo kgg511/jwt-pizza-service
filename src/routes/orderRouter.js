@@ -5,7 +5,7 @@ const { Role, DB } = require('../database/database.js');
 const { authRouter } = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 const { METRIC: Metric } = require('../metrics.js');
-
+const logger = require('../logger.js');
 const orderRouter = express.Router();
 
 orderRouter.endpoints = [
@@ -87,6 +87,7 @@ orderRouter.post(
       headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
       body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
     });
+    logger.factoryLogger(order, r.ok);
     const j = await r.json();
     if (r.ok) {
       Metric.updatePizzaMetrics(startTime, order);

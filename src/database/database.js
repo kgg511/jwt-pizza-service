@@ -286,15 +286,14 @@ class DB {
   }
 
   async query(connection, sql, params) {
-    logger.DBLogger(sql, params);
+    logger.DBLogger(sql);
     const [results] = await connection.execute(sql, params);
     return results;
   }
 
-  // WAIT, this isn't calling query...should I force it to use query??
+  // this doesn't get logged FYI (could not find a way to get query to call it without erroring)
   async getID(connection, key, value, table) {
-    //const [rows] = await connection.execute(`SELECT id FROM ${table} WHERE ${key}=?`, [value]);
-    const [rows] = await this.query(connection, `SELECT id FROM ? WHERE ?=?`, [table, key, value]);
+    const [rows] = await connection.execute(`SELECT id FROM ${table} WHERE ${key}=?`, [value]);
     if (rows.length > 0) {
       return rows[0].id;
     }
