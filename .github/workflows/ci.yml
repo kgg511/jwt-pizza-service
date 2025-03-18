@@ -80,6 +80,10 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           printf '{"version": "%s" }' "$version" > src/version.json
 
+      - name: Annotate deployment in Grafana
+        run: |
+          version=${{ steps.set_version.outputs.version }}
+          curl -s -X POST https://kgg511.grafana.net/api/annotations -H "Authorization: Bearer ${{ secrets.GRAFANA_ACCESS_TOKEN }}" -H "Content-Type:application/json" -d '{"dashboardUID":"eeeo64gt105c0c", "tags":["backend","production"], "text":"Version '"$version"' deployed" }'
       - name: Update coverage
         run: |
           coverage=$(jq '.total.lines.pct' coverage/coverage-summary.json)
@@ -162,3 +166,5 @@ jobs:
           service: jwt-pizza-service
           cluster: jwt-pizza-service
           wait-for-service-stability: false
+
+      
