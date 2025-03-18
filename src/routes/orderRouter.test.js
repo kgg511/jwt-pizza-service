@@ -98,8 +98,10 @@ test("make order", async()=>{
   .send();
 
   const order = getOrderRes.body.orders[0];
-  expect(order.franchiseId == mail.franchiseId && order.storeId == mail.storeId 
-        && order.items[0].menuId == mail.items[0].menuId && order.items[0].description == mail.items[0].description).toBe(true);
+  expect(order.franchiseId).toBe(mail.franchiseId);
+  expect(order.storeId).toBe(mail.storeId);
+  expect(order.items[0].menuId).toBe(mail.items[0].menuId);
+  expect(order.items[0].description).toBe(mail.items[0].description);
   expect(order.items[0].price).toBeCloseTo(mail.items[0].price, 3);
 
   await prob.signOutT(adminRes.body.token);

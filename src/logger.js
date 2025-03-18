@@ -30,9 +30,6 @@ class Logger {
   }
 
   factoryLogger(orderInfo, orderSuccessful) {
-    // const logData = {
-    //   order: orderInfo,
-    // }
     const logData = {
       franchiseID: orderInfo.franchiseId,
       id: orderInfo.id,
