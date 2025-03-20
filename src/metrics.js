@@ -231,7 +231,12 @@ class Metric{
             {
               [dataType]: metricValue,
               timeUnixNano: Date.now() * 1000000,
-              attributes: []
+              attributes: [
+                {
+                   "key": "source",
+                   "value": { "stringValue": config.metrics.source}
+                }
+             ]
             },
           ]
         }
