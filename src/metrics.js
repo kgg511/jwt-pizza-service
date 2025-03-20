@@ -31,7 +31,7 @@ class Metric{
       console.log("Price: ", item.price); // revenue
       this.revenue += item.price;
     });
-    console.log("CHAIR", order.items.length);
+
   }
 
   updateActiveUser(token, time){
@@ -60,7 +60,7 @@ class Metric{
   requestTracker = (req, res, next) => {
     const requestType = req.method;
     const path = req.path;
-    console.log(requestType, path);
+    //console.log(requestType, path);
     this.requests[requestType] = (this.requests[requestType] || 0) + 1; //get/push/put/delete
     const startTime = Date.now(); // track the time it takes to process the request
     const token = req.headers.authorization;
@@ -83,7 +83,7 @@ class Metric{
     }
 
     updateAfterRequest(res, req, startTime){
-      console.log("Request duration: ", Date.now() - startTime);
+      //console.log("Request duration: ", Date.now() - startTime);
       console.log("Status code: ", res.statusCode, req.method, req.baseUrl);
       this.numRequestsCompleted++;
       this.sumRequestDuration += Date.now() - startTime; // time request took to execute
@@ -156,7 +156,7 @@ class Metric{
 
    setRequests(metricsArray){
     const {GET, POST, PUT, total} = this.getRequests();
-    console.log(GET, POST, PUT, total);
+    //console.log(GET, POST, PUT, total);
     const get_metric = this.metric_object("GET", GET, "sum", '1');
     const post_metric = this.metric_object("POST", POST, "sum", '1');
     const put_metric = this.metric_object("PUT", PUT, "sum", '1');
@@ -243,14 +243,6 @@ class Metric{
       };
       
       if (type === 'sum') {
-        // set attributes if there are attributes
-      // Object.keys(attributes).forEach((key) => {
-      //   OneMetric.sum.dataPoints[0].attributes.push({
-      //     key: key,
-      //     value: { stringValue: attributes[key] },
-      //   });
-      // });
-
         OneMetric[type].aggregationTemporality = 'AGGREGATION_TEMPORALITY_CUMULATIVE';
         OneMetric[type].isMonotonic = true;
       }
@@ -275,10 +267,10 @@ class Metric{
    sendMetricToGrafana(metricsArray) {
     console.log('Sending metrics to Grafana');
       const metrics = this.getAllMetrics(metricsArray);
-      console.log(metricsArray);
-      console.log(this.activeUsers);
+      //console.log(metricsArray);
+      //console.log(this.activeUsers);
       const body = JSON.stringify(metrics);
-      console.log(`Bearer ${config.metrics.userId}:${config.metrics.apiKey}`)
+      console.log(`Bearer ${config.metrics.userId}:${config.metrics.apiKey}  ${config.metrics.url}`);
       fetch(`${config.metrics.url}`, {
         method: 'POST',
         body: body,
