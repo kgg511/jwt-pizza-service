@@ -221,7 +221,7 @@ class Metric{
     }
 
   // Code for sending all the metrics over to grafana
-   createSingleMetric(metricName, metricValue, type, unit, dataType = "asInt", attributes = {}) {
+   createSingleMetric(metricName, metricValue, type, unit, dataType = "asInt") {
     // attributes = { ...attributes, source: config.source };
       const OneMetric = {
         name: metricName,
