@@ -278,6 +278,7 @@ class Metric{
       console.log(metricsArray);
       console.log(this.activeUsers);
       const body = JSON.stringify(metrics);
+      console.log(`Bearer ${config.metrics.userId}:${config.metrics.apiKey}`)
       fetch(`${config.metrics.url}`, {
         method: 'POST',
         body: body,
