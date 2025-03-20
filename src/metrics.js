@@ -222,7 +222,7 @@ class Metric{
 
   // Code for sending all the metrics over to grafana
    createSingleMetric(metricName, metricValue, type, unit, dataType = "asInt", attributes = {}) {
-    attributes = { ...attributes, source: config.source };
+    // attributes = { ...attributes, source: config.source };
       const OneMetric = {
         name: metricName,
         unit: unit,
@@ -244,12 +244,12 @@ class Metric{
       
       if (type === 'sum') {
         // set attributes if there are attributes
-      Object.keys(attributes).forEach((key) => {
-        OneMetric.sum.dataPoints[0].attributes.push({
-          key: key,
-          value: { stringValue: attributes[key] },
-        });
-      });
+      // Object.keys(attributes).forEach((key) => {
+      //   OneMetric.sum.dataPoints[0].attributes.push({
+      //     key: key,
+      //     value: { stringValue: attributes[key] },
+      //   });
+      // });
 
         OneMetric[type].aggregationTemporality = 'AGGREGATION_TEMPORALITY_CUMULATIVE';
         OneMetric[type].isMonotonic = true;
