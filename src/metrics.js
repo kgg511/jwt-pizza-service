@@ -116,7 +116,7 @@ class Metric{
     const PUT = this.requests['PUT'] || 0;
     const DELETE = this.requests['DELETE'] || 0;
     const total = GET + POST + PUT + DELETE;
-    return {GET, POST, PUT, total};
+    return {GET, POST, PUT, DELETE, total};
   }
 
    getCpuUsagePercentage() {
@@ -155,15 +155,17 @@ class Metric{
   }
 
    setRequests(metricsArray){
-    const {GET, POST, PUT, total} = this.getRequests();
+    const {GET, POST, PUT, DELETE, total} = this.getRequests();
     //console.log(GET, POST, PUT, total);
     const get_metric = this.metric_object("GET", GET, "sum", '1');
     const post_metric = this.metric_object("POST", POST, "sum", '1');
     const put_metric = this.metric_object("PUT", PUT, "sum", '1');
+    const delete_metric = this.metric_object("DELETE", DELETE, "sum", '1');
     const total_metric = this.metric_object("Total", total, "sum", '1');
     metricsArray.push(get_metric);
     metricsArray.push(post_metric);
     metricsArray.push(put_metric);
+    metricsArray.push(delete_metric);
     metricsArray.push(total_metric);
   }
 
@@ -270,7 +272,6 @@ class Metric{
       //console.log(metricsArray);
       //console.log(this.activeUsers);
       const body = JSON.stringify(metrics);
-      console.log(`Bearer ${config.metrics.userId}:${config.metrics.apiKey}  ${config.metrics.url}`);
       fetch(`${config.metrics.url}`, {
         method: 'POST',
         body: body,
