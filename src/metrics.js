@@ -15,6 +15,15 @@ class Metric{
     this.sumRequestDuration = 0; // sum of request durations
     this.sumDurationPizza = 0; // sum time spent on pizza creation
     this.activeUsers = [];
+
+    // endpoints and their error counts
+    this.errorCount = {}; // key = path+type, value = count
+    this.logFail = 0 // number of times a log failed
+
+    // 500, 403, 404
+    // I can already see all the errors...I want to know the paths that are erroring
+
+
   }
 
   // required metrics:
@@ -28,10 +37,8 @@ class Metric{
     this.sumDurationPizza += Date.now() - startTime; // time for pizza creation
     this.pizzasSold += order.items.length; // number of pizzas sold
     order.items.forEach((item) => {
-      console.log("Price: ", item.price); // revenue
       this.revenue += item.price;
     });
-
   }
 
   updateActiveUser(token, time){
@@ -60,7 +67,6 @@ class Metric{
   requestTracker = (req, res, next) => {
     const requestType = req.method;
     const path = req.path;
-    //console.log(requestType, path);
     this.requests[requestType] = (this.requests[requestType] || 0) + 1; //get/push/put/delete
     const startTime = Date.now(); // track the time it takes to process the request
     const token = req.headers.authorization;
@@ -84,7 +90,9 @@ class Metric{
 
     updateAfterRequest(res, req, startTime){
       //console.log("Request duration: ", Date.now() - startTime);
-      console.log("Status code: ", res.statusCode, req.method, req.baseUrl);
+
+      //Status code:  500 POST  /api/order /api/order
+      console.log("Status code: ", res.statusCode, req.method, req.baseUrl, req.originalUrl, req.path);
       this.numRequestsCompleted++;
       this.sumRequestDuration += Date.now() - startTime; // time request took to execute
       const endpoint = req.originalUrl
@@ -153,10 +161,18 @@ class Metric{
       dataType: dataType
     }
   }
+  
+    setRequestsError(metricsArray){
+      Object.keys(this.errorCount).forEach((key) =>{
+        metricsArray.push(
+          this.metric_object(key, this.errorCount[key], "sum", '1')
+        );
+      }
+      );
+    }
 
    setRequests(metricsArray){
     const {GET, POST, PUT, DELETE, total} = this.getRequests();
-    //console.log(GET, POST, PUT, total);
     const get_metric = this.metric_object("GET", GET, "sum", '1');
     const post_metric = this.metric_object("POST", POST, "sum", '1');
     const put_metric = this.metric_object("PUT", PUT, "sum", '1');
@@ -216,6 +232,7 @@ class Metric{
         this.setPizzaMetrics(metricsArray);
         this.setActiveUsers(metricsArray);
         this.setLatencyMetrics(metricsArray);
+        this.setRequestsError(metricsArray)
         this.sendMetricToGrafana(metricsArray);
       } catch (error) {
         console.log('Error sending metrics', error);
@@ -269,8 +286,7 @@ class Metric{
    sendMetricToGrafana(metricsArray) {
     console.log('Sending metrics to Grafana');
       const metrics = this.getAllMetrics(metricsArray);
-      //console.log(metricsArray);
-      //console.log(this.activeUsers);
+      console.log('Metrics to send:', metricsArray);
       const body = JSON.stringify(metrics);
       fetch(`${config.metrics.url}`, {
         method: 'POST',

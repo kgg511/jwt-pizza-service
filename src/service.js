@@ -59,6 +59,12 @@ app.use('*', (req, res) => {
 
 // Default error handler for all exceptions and errors.
 app.use((err, req, res, next) => {
+  // what was the path, the error, and how frequently?
+  const key = `${req.method} ${req.path} ${err.statusCode ?? 500}`;
+  Metric.errorCount[key] = (Metric.errorCount[key] || 0) + 1;
+  Metric.errorCount['all'] = (Metric.errorCount['all'] || 0) + 1;
+
+  //req.originalUrl
   logger.unhandledErrorLogger(err);
   res.status(err.statusCode ?? 500).json({ message: err.message, stack: err.stack });
   next();

@@ -74,11 +74,23 @@ orderRouter.get(
   })
 );
 
+let enableChaos = false;
+orderRouter.post('/', (req, res, next) => {
+  if (enableChaos && Math.random() < 0.5) {
+    console.log('Chaos monkey throwing error');
+    throw new StatusCodeError('Chaos monkey', 500);
+  }
+  next();
+});
+
 // createOrder
 orderRouter.post(
   '/',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
+
+    // chaos logic
+
     const orderReq = req.body;
     const order = await DB.addDinerOrder(req.user, orderReq);
     const startTime = Date.now();
@@ -98,5 +110,21 @@ orderRouter.post(
     }
   })
 );
+
+
+orderRouter.put(
+  '/chaos/:state',
+  authRouter.authenticateToken,
+  asyncHandler(async (req, res) => {
+    if (req.user.isRole(Role.Admin)) {
+      console.log('Chaos monkey enabled');
+      enableChaos = req.params.state === 'true';
+    }
+
+    res.json({ chaos: enableChaos });
+  })
+);
+
+
 
 module.exports = orderRouter;
