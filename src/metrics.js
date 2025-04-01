@@ -18,12 +18,6 @@ class Metric{
 
     // endpoints and their error counts
     this.errorCount = {}; // key = path+type, value = count
-    this.logFail = 0 // number of times a log failed
-
-    // 500, 403, 404
-    // I can already see all the errors...I want to know the paths that are erroring
-
-
   }
 
   // required metrics:
@@ -43,48 +37,31 @@ class Metric{
 
   updateActiveUser(token, time){
     // check if token is in the list
-    const activeTime = 180000// 3 minutes in milliseconds
-    const userIndex = this.activeUsers.findIndex(user => user.token === token);
-    if(userIndex != -1){ // if it's in the list
-      this.activeUsers.splice(userIndex, 1); // remove 
-    }
-    this.activeUsers.push({token: token, time: time}); // put at end
-
-    // remove inactive users
-    const currentTime = Date.now();
-    let newActiveIndex = 0;
-    this.activeUsers.forEach((user, index) => {
-      if(currentTime - user.time < activeTime){
-        newActiveIndex = index;
+    if (token){
+      // add/update token
+      const userIndex = this.activeUsers.findIndex(user => user.token === token);
+      if(userIndex != -1){ // if it's in the list
+        this.activeUsers.splice(userIndex, 1); // remove 
       }
-    });
+      this.activeUsers.push({token: token, time: time}); // put at end
+    }
+    
+    // remove inactive users
+    const activeTime = 120000// 2 minutes in milliseconds
+    const currentTime = Date.now();
+    let firstValidIndex = this.activeUsers.findIndex(user => currentTime - user.time < activeTime);
 
-    if(newActiveIndex > 0){
-      this.activeUsers = this.activeUsers.slice(newActiveIndex);}
+    if(firstValidIndex != -1){
+      this.activeUsers = this.activeUsers.slice(firstValidIndex);}
+    else{
+      this.activeUsers = [];
+    }
   }
 
   // tracking logic that occurs BEFORE the actual request occurs
   requestTracker = (req, res, next) => {
     const requestType = req.method;
-    const path = req.path;
     this.requests[requestType] = (this.requests[requestType] || 0) + 1; //get/push/put/delete
-    const startTime = Date.now(); // track the time it takes to process the request
-    const token = req.headers.authorization;
-
-    if (token && token.split(' ')[1]){ // if request made with a token
-      const bearerToken = token.split(' ')[1];
-
-      if (path == "/api/auth" && requestType == "DELETE"){ // logout removal from active users
-        const userIndex = this.activeUsers.findIndex(user => user.token === bearerToken);
-        if(userIndex != -1){ 
-          this.activeUsers.splice(userIndex, 1);
-          console.log("user no longer active due to logging out");
-        }
-      }
-      else{ // update active user
-        this.updateActiveUser(bearerToken, startTime);
-      }
-    }
       next();
     }
 
@@ -103,6 +80,7 @@ class Metric{
       // login/register
       if (endpoint == "/api/auth" && (req.method == "POST" || req.method == "PUT")){
         if (req.body.token != undefined) { // login/register add to active users
+          console.log("adding user", req.body.token);
           this.updateActiveUser(req.body.token, startTime);
         };
 
@@ -234,6 +212,7 @@ class Metric{
         this.setLatencyMetrics(metricsArray);
         this.setRequestsError(metricsArray)
         this.sendMetricToGrafana(metricsArray);
+        console.log(this.activeUsers);
       } catch (error) {
         console.log('Error sending metrics', error);
       }

@@ -42,6 +42,7 @@ authRouter.endpoints = [
 
 async function setAuthUser(req, res, next) {
   const token = readAuthToken(req);
+  Metric.updateActiveUser(token, Date.now());
   if (token) {
     try {
       if (await DB.isLoggedIn(token)) {
@@ -66,6 +67,7 @@ authRouter.authenticateToken = (req, res, next) => {
   }
   console.log('authenticated');
   Metric.success++;
+
   next();
 };
 
@@ -99,6 +101,7 @@ authRouter.delete(
   '/',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
+
     await clearAuth(req);
     res.json({ message: 'logout successful' });
   })
@@ -130,6 +133,13 @@ async function setAuth(user) {
 async function clearAuth(req) {
   const token = readAuthToken(req);
   if (token) {
+
+    // Metric: remove user from active users
+    const userIndex = Metric.activeUsers.findIndex(user => user.token === token);
+    if(userIndex != -1){ 
+      Metric.activeUsers.splice(userIndex, 1);
+      console.log("user no longer active due to logging out");
+    }
     await DB.logoutUser(token);
   }
 }
