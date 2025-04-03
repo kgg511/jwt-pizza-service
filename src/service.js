@@ -21,9 +21,9 @@ app.use((req, res, next) => {
 
   let startTime = Date.now();
   // req.path is correct, BEFORE RUNNING THE REQUEST
-  console.log(req.method, req.baseUrl, req.originalUrl, req.path);
+  // console.log(req.method, req.baseUrl, req.originalUrl, req.path);
   res.on("finish", () => {
-    console.log(req.method, req.baseUrl, req.originalUrl, req.path);
+    //console.log(req.method, req.baseUrl, req.originalUrl, req.path);
     Metric.updateAfterRequest(res, req, startTime);
   });
 

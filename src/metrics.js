@@ -66,10 +66,8 @@ class Metric{
     }
 
     updateAfterRequest(res, req, startTime){
-      //console.log("Request duration: ", Date.now() - startTime);
-
       //Status code:  500 POST  /api/order /api/order
-      console.log("Status code: ", res.statusCode, req.method, req.baseUrl, req.originalUrl, req.path);
+      //console.log("Status code: ", res.statusCode, req.method, req.baseUrl, req.originalUrl, req.path);
       this.numRequestsCompleted++;
       this.sumRequestDuration += Date.now() - startTime; // time request took to execute
       const endpoint = req.originalUrl
@@ -80,17 +78,16 @@ class Metric{
       // login/register
       if (endpoint == "/api/auth" && (req.method == "POST" || req.method == "PUT")){
         if (req.body.token != undefined) { // login/register add to active users
-          console.log("adding user", req.body.token);
           this.updateActiveUser(req.body.token, startTime);
         };
 
         if (res.statusCode == 200) { //successful login/register
           this.success++;
-          console.log("Success: ", this.success);
+          //console.log("Success: ", this.success);
         }
         else{ //failed login/register
           this.failed++;
-          console.log("fail: ", this.failed);
+          //console.log("fail: ", this.failed);
         }
       }
 
@@ -212,7 +209,7 @@ class Metric{
         this.setLatencyMetrics(metricsArray);
         this.setRequestsError(metricsArray)
         this.sendMetricToGrafana(metricsArray);
-        console.log(this.activeUsers);
+        //console.log(this.activeUsers);
       } catch (error) {
         console.log('Error sending metrics', error);
       }
@@ -263,9 +260,7 @@ class Metric{
   }
     
    sendMetricToGrafana(metricsArray) {
-    console.log('Sending metrics to Grafana');
       const metrics = this.getAllMetrics(metricsArray);
-      console.log('Metrics to send:', metricsArray);
       const body = JSON.stringify(metrics);
       fetch(`${config.metrics.url}`, {
         method: 'POST',
@@ -278,7 +273,7 @@ class Metric{
               console.error(`Failed to push metrics data to Grafana: ${text}\n${body}`);
             });
           } else {
-            console.log(`Pushed all metrics`);
+            
           }
         })
         .catch((error) => {

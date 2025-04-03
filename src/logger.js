@@ -1,6 +1,4 @@
 const config = require('./config.js');
-// const { METRIC: Metric } = require('../metrics.js');
-
 
 class Logger {
   httpLogger = (req, res, next) => {

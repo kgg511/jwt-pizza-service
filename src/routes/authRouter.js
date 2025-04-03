@@ -59,13 +59,13 @@ async function setAuthUser(req, res, next) {
 
 // Authenticate token
 authRouter.authenticateToken = (req, res, next) => {
-  console.log('authenticating token');
+  //console.log('authenticating token');
   if (!req.user) {
-    console.log('unauthorized');
+    //console.log('unauthorized');
     Metric.failed++;
     return res.status(401).send({ message: 'unauthorized' });
   }
-  console.log('authenticated');
+  //console.log('authenticated');
   Metric.success++;
 
   next();
@@ -138,7 +138,7 @@ async function clearAuth(req) {
     const userIndex = Metric.activeUsers.findIndex(user => user.token === token);
     if(userIndex != -1){ 
       Metric.activeUsers.splice(userIndex, 1);
-      console.log("user no longer active due to logging out");
+      //console.log("user no longer active due to logging out");
     }
     await DB.logoutUser(token);
   }
