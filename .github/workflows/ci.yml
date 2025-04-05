@@ -50,6 +50,11 @@ jobs:
                 database: 'pizza',
                 connectTimeout: 60000,
               },
+              adminUser: {
+                name: "bestAdmin",
+                email: '${{ secrets.ADMIN_EMAIL }}',
+                password: '${{ secrets.ADMIN_PASSWORD }}'
+              },
               listPerPage: 10,
             },
             factory: {

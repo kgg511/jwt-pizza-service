@@ -345,7 +345,7 @@ class DB {
         }
 
         if (!dbExists) {
-          const defaultAdmin = { name: '常用名字', email: 'a@jwt.com', password: 'admin', roles: [{ role: Role.Admin }] };
+          const defaultAdmin = { name: config.db.adminUser.name, email: config.db.adminUser.email, password: config.db.adminUser.password, roles: [{ role: Role.Admin }] };
           this.addUser(defaultAdmin);
         }
       } finally {
