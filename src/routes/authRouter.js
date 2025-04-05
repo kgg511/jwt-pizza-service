@@ -115,6 +115,7 @@ authRouter.put(
     const { email, password } = req.body;
     const userId = Number(req.params.userId);
     const user = req.user;
+    // you can only update your own user or if you are an admin
     if (user.id !== userId && !user.isRole(Role.Admin)) {
       return res.status(403).json({ message: 'unauthorized' });
     }
