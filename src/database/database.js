@@ -92,7 +92,6 @@ class DB {
       }
       if (params.length > 0) {
         const query = `UPDATE user SET ${params.join(', ')} WHERE id=${userId}`;
-        console.log(query);
         await this.query(connection, query);
       }
       return this.getUser(email, password);
@@ -292,7 +291,6 @@ class DB {
   async query(connection, sql, params) {
     logger.DBLogger(sql);
     const [results] = await connection.execute(sql, params);
-    console.log('query results', results);
     return results;
   }
 

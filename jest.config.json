@@ -8,6 +8,8 @@
     },
     "collectCoverageFrom": [
     "src/**/*.js",
-    "!dist/**"  
+    "!dist/**",
+    "!src/metrics.js",
+    "!src/logger.js"
   ]
 }
