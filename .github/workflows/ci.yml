@@ -51,7 +51,7 @@ jobs:
                 connectTimeout: 60000,
               },
               adminUser: {
-                name: "bestAdmin",
+                name: 'bestAdmin',
                 email: '${{ secrets.ADMIN_EMAIL }}',
                 password: '${{ secrets.ADMIN_PASSWORD }}'
               },
