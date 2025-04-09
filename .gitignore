@@ -6,3 +6,8 @@ coverage
 dist
 idea.md
 src/dbGenerate.sh
+src/dbGenerateL.sh
+generatePizzaTraffic.sh
+deployService.sh
+src/traffic.sh
+attack.sh

@@ -76,24 +76,24 @@ class DB {
     }
   }
 
-  // if I can figure out what the id is to a user, I can update their username and password
-
-  // curl -X PUT localhost:3000/api/auth/1 -d '{"email":"a@jwt.com; DROP DATABASE pizza; --", "password":"1"}' -H 'Content-Type: application/json' -H 'Authorization: Bearer tttttt'
   async updateUser(userId, email, password) {
     const connection = await this.getConnection();
     try {
       const params = [];
+      const variables = [];
       if (password) {
         const hashedPassword = await bcrypt.hash(password, 10);
         params.push(`password='${hashedPassword}'`);
       }
       if (email) {
-        params.push(`email='${email}'`);
+        params.push(`email=?`);
+        variables.push(email);
       }
+
       if (params.length > 0) {
-        const query = `UPDATE user SET ${params.join(', ')} WHERE id=${userId}`;
-        await this.query(connection, query);
+        await this.query(connection, `UPDATE user SET ${params.join(', ')} WHERE id=${userId}`, variables);
       }
+
       return this.getUser(email, password);
     } finally {
       connection.end();
@@ -152,8 +152,12 @@ class DB {
       const orderResult = await this.query(connection, `INSERT INTO dinerOrder (dinerId, franchiseId, storeId, date) VALUES (?, ?, ?, now())`, [user.id, order.franchiseId, order.storeId]);
       const orderId = orderResult.insertId;
       for (const item of order.items) {
-        const menuId = await this.getID(connection, 'id', item.menuId, 'menu');
-        await this.query(connection, `INSERT INTO orderItem (orderId, menuId, description, price) VALUES (?, ?, ?, ?)`, [orderId, menuId, item.description, item.price]);
+        const menuId = await this.getID(connection, 'id', item.menuId, 'menu'); // verify real item
+        const dbItems = await this.query(connection, `SELECT * FROM menu WHERE id=?`, [menuId]);
+        const dbItem = dbItems[0];
+
+        // fetch the item from the menu and use that information
+        await this.query(connection, `INSERT INTO orderItem (orderId, menuId, description, price) VALUES (?, ?, ?, ?)`, [orderId, menuId, dbItem.description, dbItem.price]);
       }
       return { ...order, id: orderId };
     } finally {
@@ -290,12 +294,11 @@ class DB {
 
   async query(connection, sql, params) {
     logger.DBLogger(sql);
+    console.log(sql);
     const [results] = await connection.execute(sql, params);
     return results;
   }
 
-  // this doesn't get logged FYI (could not find a way to get query to call it without erroring)
-  // this function obviously allow
   async getID(connection, key, value, table) {
     const [rows] = await connection.execute(`SELECT id FROM ${table} WHERE ${key}=?`, [value]);
     if (rows.length > 0) {
